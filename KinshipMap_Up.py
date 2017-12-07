@@ -2,30 +2,28 @@
 """
 Created on Wed Dec  6 13:29:43 2017 This is a copy for Python 3.x
 
-@author: Jianqiu Lu
-@email: lujq96@gmail.com
+@author: Jianqiu Lu, Hanyu Zhang
+@email: lujq96@gmail.com,zhanghy1996@gmail.com
 """
 import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-import queue
+import Queue
 import codecs
+import re
 
 def readData():
     KinDataFile = input("Filename of kindata(*.csv): ")
     BioMainFile = input("Filename of biography(*.csv): ")
     KinCodeFile = input("Filename of kindatacode(*.csv): ")
-    OutPutFile = input("Output Filename: ")
     kindata = pd.DataFrame.from_csv(KinDataFile)
     biogmain = pd.DataFrame.from_csv(BioMainFile)
     kindatacode = pd.DataFrame.from_csv(KinCodeFile)
     reslist = [kindata,biogmain,kindatacode]
     return(reslist)
 
-def Divide():
-    if(reslist == null):
-        reslist = readData()
+def preProcess(reslist):
     kindata = reslist[0]
     biogmain = reslist[1]
     kindatacode = reslist[2]
@@ -34,15 +32,45 @@ def Divide():
     kindatacode.index = kindatacode["c_kincode"].tolist()
     people = set(kindata['c_personid']) & set(biogmain["c_personid"])
     n = len(people)
-    unvisited = people - set([0])
     kindata.index = kindata["c_kin_id"].tolist()
     m = max(kindata.index)
+    datalist = [kindata,biogmain,kindatacode,allkindatacode,people,n,m]
+    return datalist
+
+def readFile(inGraphFile = null):
+    if(inGraphFile = null):
+        inGraphFile = input('Input Graph File Name: ')
+    with open(inGraphFile,'r') as f:
+        lines = f.readlines()
+    graphs = []
+    for k in range(len(lines)/3):
+        G = nx.MultiDiGraph()
+        node = [int(x) for x in re.findall(r'\d+',lines[1+3*k])]
+        G.add_nodes(node)
+        edge = [int(x) for x in re.findall(r'\d+',lines[2+3*k])]
+        for l in range(len(edge)/3):
+            G.add_edge(edge[3*l],edge[3*l+1],weight = edge[3*l+2])
+        graphs.append(G)
+    return graphs
+    
+
+def Divide():
+    reslist = readData()
+    datalist = preProcess(reslist)
+    OutPutFile = input("Output Filename: ")
+    kindata = datalist[0]
+    biogmain = datalist[1]
+    kindatacode = datalist[2]
+    allkindatacode = datalist[3]
+    people = datalist[4]
+    n = datalist[5]
+    m = datalist[6]
+    
     graphs = []
     pairs = []
     roots = []
     crash = 0
         
-    
     status = np.zeros(m+1,np.int32)
     cnterrid = 0
     cnterrrel = 0
@@ -55,7 +83,7 @@ def Divide():
             unvisited.remove(k)
             k = min(unvisited)
         G = nx.MultiDiGraph()
-        Q = queue.Queue(maxsize=0)
+        Q = Queue.Queue(maxsize=0)
         Q.put(k)
         unvisited.remove(k)
         G.add_node(k)
@@ -165,6 +193,7 @@ def Divide():
         print("New Graph")
         #print(G.edges())
         graphs.append(G)
+    
     f = codecs.open(OutPutFile+".cut","w",encoding="utf8")
     for g in range(len(graphs)):
         f.write("Family%d\n"%g)
@@ -180,13 +209,29 @@ def Divide():
         f.write("\n")
     f.write("#")
     f.close()
-    graphlist = [graphs,m,kindata,biogmain,kindatacode]
-    return graphlist
+    graphs = Combine(graphs,m)
+    return graphs
 
-def Combine():
-    graphlist = Divide()
-    graphs = graphlist[0]
-    m = graphlist[1]
+def Merge():
+    graphs1 = readFile()
+    graphs2 = readFile()
+    m1 = 0
+    m2 = 0
+    for g in graphs2:
+        graphs1.append(g)
+        mt = max(g.nodes())
+        if mt > m2:
+            m2 = mt
+    graphs = graphs1
+    for g in graphs1:
+        mt = max(g.nodes())
+        if mt > m1:
+            m1 = mt
+    m = max([m1,m2])
+    graphs = Combine(graphs,m)
+    return graphs
+    
+def Combine(graphs,m):
     first = np.zeros(m+1,np.int32)-1
     f = codecs.open("Result1.txt","w",encoding="utf8")
     for g in range(len(graphs)):
@@ -229,8 +274,7 @@ def Combine():
             for n in G.nodes():
                 first[n]=combto
         cnt += 1
-    graphlist[0] = graphs
-    return graphlist
+    return graphs
 
 def ForbidList(k):
     if k==1:
@@ -240,12 +284,17 @@ def ForbidList(k):
     return {"P"}
 
 def Generate():
-    graphlist = Combine()
-    graphs = graphlist[0]
-    m = graphlist[1]
-    kindata = graphlist[2]
-    biogmain = graphlist[3]
-    kindatacode = graphlist[4]
+    reslist = readData()
+    datalist = preProcess(reslist)
+    kindata = datalist[0]
+    biogmain = datalist[1]
+    kindatacode = datalist[2]
+    allkindatacode = datalist[3]
+    people = datalist[4]
+    n = datalist[5]
+    m = datalist[6]
+    graphs = pickle.load('graphs.pk','')
+    
     not0 = 0
     num_node = []
     num_edge = []
@@ -270,7 +319,7 @@ def Generate():
     gen_pj[min(Nodes)]=0
     unvisited = set(Nodes)-{min(Nodes)}
     cnt = 0
-    Q = queue.Queue(maxsize=0)
+    Q = Queue.Queue(maxsize=0)
     Q.put(min(Nodes))
     while(not Q.empty()):
         k = Q.get()
@@ -446,7 +495,7 @@ while True:
     if S=="1":
         Divide()
     elif S=="2":
-        Combine()
+        Merge()
     elif S=="3":
         Generate()
     elif S=="0":
