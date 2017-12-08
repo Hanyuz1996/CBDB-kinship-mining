@@ -6,13 +6,16 @@ Created on Wed Dec  6 13:29:43 2017 This is a copy for Python 3.x
 @email: lujq96@gmail.com,zhanghy1996@gmail.com
 """
 import pandas as pd
-import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import Queue
 import codecs
 import re
 
+
+###############################################################################
+# readData: input the file name of three data files: kindata, biogmain and 
+# kincodefile and read them into the program and transform to pandas dataframe
 def readData():
     KinDataFile = input("Filename of kindata(*.csv): ")
     BioMainFile = input("Filename of biography(*.csv): ")
@@ -23,6 +26,9 @@ def readData():
     reslist = [kindata,biogmain,kindatacode]
     return(reslist)
 
+###############################################################################
+# preProcess: read the pandas dataframe file and do basis pre processing of the
+# data
 def preProcess(reslist):
     kindata = reslist[0]
     biogmain = reslist[1]
@@ -37,8 +43,10 @@ def preProcess(reslist):
     datalist = [kindata,biogmain,kindatacode,allkindatacode,people,n,m]
     return datalist
 
-def readFile(inGraphFile = null):
-    if(inGraphFile = null):
+###############################################################################
+# readFile: read data from a txt file and construct the graphs list
+def readFile(inGraphFile):
+    if(not inGraphFile):
         inGraphFile = input('Input Graph File Name: ')
     with open(inGraphFile,'r') as f:
         lines = f.readlines()
@@ -53,7 +61,10 @@ def readFile(inGraphFile = null):
         graphs.append(G)
     return graphs
     
-
+###############################################################################
+# Divide: Transform the datafiles into compact components of the network. Using
+# specific rules to divide large graphs to small graphs and save the result into
+# a txt file named as OutPutFile.
 def Divide():
     reslist = readData()
     datalist = preProcess(reslist)
@@ -194,6 +205,7 @@ def Divide():
         #print(G.edges())
         graphs.append(G)
     
+    # save the results
     f = codecs.open(OutPutFile+".cut","w",encoding="utf8")
     for g in range(len(graphs)):
         f.write("Family%d\n"%g)
@@ -212,6 +224,9 @@ def Divide():
     graphs = Combine(graphs,m)
     return graphs
 
+###############################################################################
+# Merge: given two graphs list file and merge them into one single larger graph
+# list
 def Merge():
     graphs1 = readFile()
     graphs2 = readFile()
@@ -230,29 +245,16 @@ def Merge():
     m = max([m1,m2])
     graphs = Combine(graphs,m)
     return graphs
-    
+
+###############################################################################
+# Combine: given a graphs file and the corresponding parameter m (largest index
+# of nodes in all graphs) and eliminate repetition of same male family members 
+# in different families aka different connected components
 def Combine(graphs,m):
     first = np.zeros(m+1,np.int32)-1
     f = codecs.open("Result1.txt","w",encoding="utf8")
-    for g in range(len(graphs)):
-        f.write("Family%d\n"%g)
-        f.write(str(graphs[g].nodes()))
-        f.write("\n")
-        Edge = []
-        for k in graphs[g].nodes():
-            for t in graphs[g][k]:
-                Edge.append((k,t,graphs[g][k][t][0]['weight']))
-        f.write(str(Edge))
-        f.write("\n")
-    f.close()   
     cnt = 0
     for g in range(len(graphs)):
-        #num_node.append(g.nodes())
-        #Edge = []
-        #for k in g.nodes():
-        #    for t in g[k]:
-        #        Edge.append((k,t,g[k][t][0]['weight']))
-        #num_edge.append(Edge)
         comb = []
         for k in graphs[g].nodes():
             if not biogmain.loc[k,'c_female']:
@@ -276,6 +278,8 @@ def Combine(graphs,m):
         cnt += 1
     return graphs
 
+###############################################################################
+# ForbidList: generate the forbidlist for different status of female members
 def ForbidList(k):
     if k==1:
         return {"H","S","D","P","A","G-","W"}
@@ -283,6 +287,9 @@ def ForbidList(k):
         return {"B","Z","G+","F","M","K","P"}
     return {"P"}
 
+###############################################################################
+# Generate: function to calculate generations of a family member, deal with crashes
+# and generate graphViz code to visualize family size.
 def Generate():
     reslist = readData()
     datalist = preProcess(reslist)
@@ -492,13 +499,13 @@ print("3. Generate Graphviz Code\n")
 print("0. exit\n")
 while True:
     S = input("Please Choose: ")
-    if S=="1":
+    if S==1:
         Divide()
-    elif S=="2":
+    elif S==2:
         Merge()
-    elif S=="3":
+    elif S==3:
         Generate()
-    elif S=="0":
+    elif S==0:
         break
     else:
         input("Wrong Input! Please Choose:")
