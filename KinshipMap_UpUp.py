@@ -201,7 +201,7 @@ def Divide():
                                 unvisited.remove(value[0])
         for k in G.nodes():
             status[k]=0
-        print("New Graph")
+        #print("New Graph")
         #print(G.edges())
         graphs.append(G)
     
@@ -221,15 +221,18 @@ def Divide():
         f.write("\n")
     f.write("#")
     f.close()
-    graphs = Combine(graphs,m)
+    graphs = Combine(graphs,m,biogmain)
     return graphs
 
 ###############################################################################
 # Merge: given two graphs list file and merge them into one single larger graph
 # list
 def Merge():
+    BioMainFile = input("Filename of biography(*.csv): ")
+    biogmain = pd.DataFrame.from_csv(BioMainFile) 
     graphs1 = readFile()
     graphs2 = readFile()
+    
     m1 = 0
     m2 = 0
     for g in graphs2:
@@ -243,14 +246,14 @@ def Merge():
         if mt > m1:
             m1 = mt
     m = max([m1,m2])
-    graphs = Combine(graphs,m)
+    graphs = Combine(graphs,m,biogmain)
     return graphs
 
 ###############################################################################
 # Combine: given a graphs file and the corresponding parameter m (largest index
 # of nodes in all graphs) and eliminate repetition of same male family members 
 # in different families aka different connected components
-def Combine(graphs,m):
+def Combine(graphs,m,biogmain):
     first = np.zeros(m+1,np.int32)-1
     f = codecs.open("Result1.txt","w",encoding="utf8")
     cnt = 0
@@ -494,7 +497,7 @@ def Generate():
 
 print("CBDB To Kinship Map\n")
 print("1. Divide\n")
-print("2. Combine\n")
+print("2. Merge two graphs files\n")
 print("3. Generate Graphviz Code\n")
 print("0. exit\n")
 while True:
