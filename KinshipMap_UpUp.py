@@ -45,17 +45,17 @@ def preProcess(reslist):
 ###############################################################################
 # readFile: read data from a txt file and construct the graphs list
 def readFile(inGraphFile):
-    if(not inGraphFile):
-        inGraphFile = input('Input Graph File Name: ')
+    #if(not inGraphFile):
+    #    inGraphFile = input('Input Graph File Name(If No More File, Input 0): ')
     with open(inGraphFile,'r') as f:
         lines = f.readlines()
     graphs = []
-    for k in range(len(lines)/3):
+    for k in range(int((len(lines)-1)/3)):
         G = nx.MultiDiGraph()
         node = [int(x) for x in re.findall(r'\d+',lines[1+3*k])]
-        G.add_nodes(node)
+        G.add_nodes_from(node)
         edge = [int(x) for x in re.findall(r'\d+',lines[2+3*k])]
-        for l in range(len(edge)/3):
+        for l in range(int((len(edge)-1)/3)):
             G.add_edge(edge[3*l],edge[3*l+1],weight = edge[3*l+2])
         graphs.append(G)
     return graphs
@@ -230,23 +230,40 @@ def Divide():
 def Merge():
     BioMainFile = input("Filename of biography(*.csv): ")
     biogmain = pd.DataFrame.from_csv(BioMainFile) 
-    graphs1 = readFile()
-    graphs2 = readFile()
-    
-    m1 = 0
-    m2 = 0
-    for g in graphs2:
-        graphs1.append(g)
-        mt = max(g.nodes())
-        if mt > m2:
-            m2 = mt
-    graphs = graphs1
-    for g in graphs1:
-        mt = max(g.nodes())
-        if mt > m1:
-            m1 = mt
-    m = max([m1,m2])
-    graphs = Combine(graphs,m,biogmain)
+    biogmain.index = biogmain["c_personid"].tolist()
+    inGraphFile = input('Input Graph File Name: ')
+    print('Loading... Please wait...')
+    graphs1 = readFile(inGraphFile)
+    graphs2=0
+    while True:
+        inGraphFile = input('Input Graph File Name(If No More File, Input 0): ')
+        if inGraphFile=="0":
+            break
+        print('Processing......Please wait......')
+        graphs2 = readFile(inGraphFile)
+        
+        m1 = 0
+        m2 = 0
+        for g in graphs2:
+            graphs1.append(g)
+            mt = max(g.nodes())
+            if mt > m2:
+                m2 = mt
+        graphs = graphs1
+        for g in graphs1:
+            mt = max(g.nodes())
+            if mt > m1:
+                m1 = mt
+        m = max([m1,m2])
+        graphs = Combine(graphs,m,biogmain)
+        graphs1 = graphs
+    if graphs2==0:
+        m1=0
+        for g in graphs1:
+            mt = max(g.nodes())
+            if mt > m1:
+                m1 = mt
+        graphs = Combine(graphs1,m1,biogmain)
     return graphs
 
 ###############################################################################
@@ -304,6 +321,7 @@ def Generate():
     n = datalist[5]
     m = datalist[6]
     graphs = pickle.load('graphs.pk','')
+    Alphabet = set("QWERTYUIOPASDFGHJKLZXCVBNM")
     
     not0 = 0
     num_node = []
